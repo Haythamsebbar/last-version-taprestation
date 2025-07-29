@@ -1,0 +1,90 @@
+/* Animations pour le hero */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.counter {
+    animation: countUp 1s ease-out forwards;
+    animation-delay: inherit;
+}
+
+/* Effet hover amélioré pour les boutons */
+.hero-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.hero-button:hover::before {
+    left: 100%;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .animate-fade-in-up {
+        animation-delay: 0s !important;
+    }
+    
+    .counter {
+        animation-delay: 0.2s;
+    }
+}
+
+/* Amélioration de l'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up,
+    .counter,
+    .hero-button {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Style pour l'élément graphique décoratif */
+.hero-decoration {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}

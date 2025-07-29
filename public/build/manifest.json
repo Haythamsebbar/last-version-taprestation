@@ -1,0 +1,22 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-DVoVg8Ob.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-C5tefEM-.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/video-recorder.js"
+    ]
+  },
+  "resources/js/video-recorder.js": {
+    "file": "assets/video-recorder-3fjQp2cJ.js",
+    "name": "video-recorder",
+    "src": "resources/js/video-recorder.js",
+    "isEntry": true
+  }
+}
