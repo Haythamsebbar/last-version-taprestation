@@ -26,16 +26,6 @@ class LoginController extends Controller
             'password.required' => 'Le mot de passe est obligatoire.',
         ]);
         
-        // Protection contre les attaques par force brute
-        $key = 'login_attempts_' . $request->ip();
-        $attempts = cache()->get($key, 0);
-        
-        if ($attempts >= 5) {
-            throw ValidationException::withMessages([
-                'email' => __('Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.'),
-            ]);
-        }
-
         // Vérifier si l'utilisateur existe
         $user = User::where('email', $request->email)->first();
 
@@ -44,9 +34,6 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember-me'))) {
             $request->session()->regenerate();
-            
-            // Réinitialiser le compteur de tentatives en cas de succès
-            cache()->forget($key);
             
             $user = Auth::user();
             
@@ -63,9 +50,6 @@ class LoginController extends Controller
             // Fallback vers dashboard générique
             return redirect()->route('dashboard');
         }
-        
-        // Incrémenter le compteur de tentatives en cas d'échec
-        cache()->put($key, $attempts + 1, now()->addMinutes(15));
 
         throw ValidationException::withMessages([
             'email' => __('Ces identifiants ne correspondent à aucun compte. Vérifiez votre email et mot de passe.'),

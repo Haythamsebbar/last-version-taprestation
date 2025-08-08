@@ -32,7 +32,6 @@
                         @else {{ ucfirst($request->status) }} @endif
                     </span>
                     
-                    @if($request->status === 'pending')
                     <div class="flex space-x-2">
                         <form method="POST" action="{{ route('prestataire.equipment-rental-requests.accept', $request) }}" class="inline">
                             @csrf
@@ -51,7 +50,6 @@
                             ❌ Refuser
                         </button>
                     </div>
-                    @endif
                 </div>
             </div>
         </div>

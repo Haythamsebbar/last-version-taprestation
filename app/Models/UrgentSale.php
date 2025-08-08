@@ -17,6 +17,7 @@ class UrgentSale extends Model
         'description',
         'price',
         'condition',
+        'category_id',
         'photos',
         'quantity',
         'location',
@@ -62,6 +63,14 @@ class UrgentSale extends Model
         self::CONDITION_USED => 'Usagé',
         self::CONDITION_FAIR => 'État correct'
     ];
+
+    /**
+     * Get the category that owns the urgent sale.
+     */
+    public function category()
+    {
+        return $this->belongsTo(EquipmentCategory::class);
+    }
 
     /**
      * Relation avec le prestataire

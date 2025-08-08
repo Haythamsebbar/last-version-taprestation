@@ -1,6 +1,6 @@
 <?php
 
-
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
@@ -52,6 +52,58 @@ Route::get('/api/categories/{category}/subcategories', function($categoryId) {
     $subcategories = \App\Models\Category::where('parent_id', $categoryId)->get();
     return response()->json($subcategories);
 });
+
+// Route de géocodage simple
+Route::get('/api/geocode', function(\Illuminate\Http\Request $request) {
+    $address = $request->get('address');
+    
+    if (empty($address)) {
+        return response()->json(['success' => false, 'message' => 'Adresse requise']);
+    }
+    
+    // Géocodage simple basé sur les villes françaises connues
+    $frenchCities = [
+        'paris' => ['latitude' => 48.8566, 'longitude' => 2.3522],
+        'marseille' => ['latitude' => 43.2965, 'longitude' => 5.3698],
+        'lyon' => ['latitude' => 45.7640, 'longitude' => 4.8357],
+        'toulouse' => ['latitude' => 43.6047, 'longitude' => 1.4442],
+        'nice' => ['latitude' => 43.7102, 'longitude' => 7.2620],
+        'nantes' => ['latitude' => 47.2184, 'longitude' => -1.5536],
+        'montpellier' => ['latitude' => 43.6110, 'longitude' => 3.8767],
+        'strasbourg' => ['latitude' => 48.5734, 'longitude' => 7.7521],
+        'bordeaux' => ['latitude' => 44.8378, 'longitude' => -0.5792],
+        'lille' => ['latitude' => 50.6292, 'longitude' => 3.0573],
+        'rennes' => ['latitude' => 48.1173, 'longitude' => -1.6778],
+        'reims' => ['latitude' => 49.2583, 'longitude' => 4.0317],
+        'toulon' => ['latitude' => 43.1242, 'longitude' => 5.9280],
+        'saint-etienne' => ['latitude' => 45.4397, 'longitude' => 4.3872],
+        'le havre' => ['latitude' => 49.4944, 'longitude' => 0.1079],
+        'grenoble' => ['latitude' => 45.1885, 'longitude' => 5.7245],
+        'dijon' => ['latitude' => 47.3220, 'longitude' => 5.0415],
+        'angers' => ['latitude' => 47.4784, 'longitude' => -0.5632],
+        'nimes' => ['latitude' => 43.8367, 'longitude' => 4.3601],
+        'villeurbanne' => ['latitude' => 45.7665, 'longitude' => 4.8795]
+    ];
+    
+    $addressLower = strtolower($address);
+    
+    foreach ($frenchCities as $city => $coords) {
+        if (strpos($addressLower, $city) !== false) {
+            return response()->json([
+                'success' => true,
+                'latitude' => $coords['latitude'],
+                'longitude' => $coords['longitude'],
+                'city' => ucfirst($city)
+            ]);
+        }
+    }
+    
+    // Si aucune ville trouvée, retourner une erreur
+     return response()->json(['success' => false, 'message' => 'Ville non trouvée']);
+ });
+
+// API de géocodage inverse (coordonnées vers adresse)
+Route::get('/api/reverse-geocode', [App\Http\Controllers\GeocodingController::class, 'reverseGeocode']);
 
 // Verification Routes
 Route::middleware(['auth', 'role:prestataire'])->group(function () {
@@ -153,6 +205,8 @@ Route::middleware(['auth'])->group(function () {
     // Booking management routes
     Route::post('/bookings/{booking}/refuse', [BookingController::class, 'refuse'])->name('bookings.refuse');
     Route::put('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::put('/bookings/{booking}/complete', [BookingController::class, 'complete'])->name('bookings.complete');
+    Route::post('/bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
 
 
     Route::get('/api/prestataire/agenda/events', [App\Http\Controllers\Prestataire\AgendaController::class, 'events'])->name('api.prestataire.agenda.events');
@@ -320,6 +374,8 @@ Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->gr
     Route::middleware(['role:prestataire'])->prefix('prestataire')->name('prestataire.')->group(function () {
         Route::put('availability/update-weekly', [\App\Http\Controllers\Prestataire\AvailabilityController::class, 'updateWeeklyAvailability'])->name('availability.updateWeekly');
         Route::resource('bookings', App\Http\Controllers\Prestataire\BookingController::class)->only(['index', 'show']);
+        Route::patch('/bookings/{booking}/accept', [\App\Http\Controllers\Prestataire\BookingController::class, 'accept'])->name('bookings.accept');
+        Route::patch('/bookings/{booking}/reject', [\App\Http\Controllers\Prestataire\BookingController::class, 'reject'])->name('bookings.reject');
         Route::resource('agenda', App\Http\Controllers\Prestataire\AgendaController::class)->only(['index']);
         Route::get('/dashboard', [\App\Http\Controllers\Prestataire\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/profile', [\App\Http\Controllers\Prestataire\ProfileController::class, 'edit'])->name('profile.edit');
@@ -428,6 +484,8 @@ Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->gr
             Route::post('/{urgentSale}/update-status', [\App\Http\Controllers\Prestataire\UrgentSaleController::class, 'updateStatus'])->name('update-status');
             Route::get('/{urgentSale}/contacts', [\App\Http\Controllers\Prestataire\UrgentSaleController::class, 'contacts'])->name('contacts');
             Route::post('/contacts/{contact}/respond', [\App\Http\Controllers\Prestataire\UrgentSaleController::class, 'respondToContact'])->name('contacts.respond');
+            Route::patch('/contacts/{contact}/accept', [\App\Http\Controllers\Prestataire\UrgentSaleController::class, 'acceptContact'])->name('contacts.accept');
+            Route::patch('/contacts/{contact}/reject', [\App\Http\Controllers\Prestataire\UrgentSaleController::class, 'rejectContact'])->name('contacts.reject');
         });
 
         

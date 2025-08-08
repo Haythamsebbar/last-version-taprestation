@@ -89,7 +89,8 @@ class OfferController extends Controller
         // Notifier le prestataire
         $prestataire = $offer->prestataire;
         if ($prestataire && $prestataire->user) {
-            Notification::send($prestataire->user, new OfferAcceptedNotification($offer, $booking));
+            $clientRequest = $offer->clientRequest;
+            Notification::send($prestataire->user, new OfferAcceptedNotification($offer, $clientRequest, $booking));
         }
         
         return redirect()->route('client.offers.index')
@@ -119,7 +120,8 @@ class OfferController extends Controller
         // Notifier le prestataire
         $prestataire = $offer->prestataire;
         if ($prestataire && $prestataire->user) {
-            Notification::send($prestataire->user, new OfferRejectedNotification($offer));
+            $clientRequest = $offer->clientRequest;
+            Notification::send($prestataire->user, new OfferRejectedNotification($offer, $clientRequest));
         }
         
         return redirect()->route('client.offers.index')

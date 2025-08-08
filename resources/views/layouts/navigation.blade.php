@@ -275,31 +275,9 @@
                         </a>
                         
                         <!-- Menu déroulant inscription -->
-                        <x-dropdown align="right" width="48">
-                            <x-slot name="trigger">
-                                <button class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200 shadow-sm flex items-center">
-                                    Inscription
-                                    <svg class="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </x-slot>
-                            
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('register', ['type' => 'client'])" class="flex items-center">
-                                    <svg class="w-4 h-4 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                    </svg>
-                                    Je suis client
-                                </x-dropdown-link>
-                                <x-dropdown-link :href="route('register', ['type' => 'prestataire'])" class="flex items-center">
-                                    <svg class="w-4 h-4 mr-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
-                                    </svg>
-                                    Je suis prestataire
-                                </x-dropdown-link>
-                            </x-slot>
-                        </x-dropdown>
+                        <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200 shadow-sm flex items-center">
+                                Inscription
+                            </a>
                     </div>
                 @endauth
             </div>
@@ -445,11 +423,8 @@
                     <a href="{{ route('login') }}" class="flex items-center justify-center px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200 border border-gray-200">
                         Connexion
                     </a>
-                    <a href="{{ route('register', ['type' => 'client']) }}" class="flex items-center justify-center px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200 mb-2">
-                        Je suis client
-                    </a>
-                    <a href="{{ route('register', ['type' => 'prestataire']) }}" class="flex items-center justify-center px-4 py-3 text-white bg-green-600 hover:bg-green-700 rounded-md transition-all duration-200">
-                        Je suis prestataire
+                    <a href="{{ route('register') }}" class="flex items-center justify-center px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200">
+                        Inscription
                     </a>
                 </div>
             </div>

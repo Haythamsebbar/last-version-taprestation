@@ -92,7 +92,7 @@ class EquipmentReviewController extends Controller
         $reviews = $query->paginate(15)->withQueryString();
         
         // Équipements du prestataire pour le filtre
-        $equipment = Auth::user()->prestataire->equipment()->active()->get(['id', 'name']);
+        $equipment = Auth::user()->prestataire->equipments()->active()->get(['id', 'name']);
         
         // Statistiques
         $stats = [

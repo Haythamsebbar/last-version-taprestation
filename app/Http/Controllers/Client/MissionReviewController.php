@@ -98,7 +98,7 @@ class MissionReviewController extends Controller
         
         // Créer la nouvelle évaluation
         $review = Review::create([
-            'client_id' => Auth::user()->client->id,
+            'client_id' => Auth::user()->id,
             'prestataire_id' => $validated['prestataire_id'],
             'booking_id' => $clientRequest->booking->id ?? null,
             'rating' => $validated['rating'],

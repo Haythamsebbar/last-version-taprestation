@@ -52,7 +52,7 @@ class EquipmentRentalRequestController extends Controller
         ];
         
         // Liste des équipements pour le filtre
-        $equipments = $prestataire->equipment()->active()->get(['id', 'name']);
+        $equipments = $prestataire->equipments()->active()->get(['id', 'name']);
         
         return view('prestataire.equipment-rental-requests.index', compact('requests', 'stats', 'equipments'));
     }
@@ -79,8 +79,12 @@ class EquipmentRentalRequestController extends Controller
     {
         // $this->authorize('update', $rentalRequest);
         
-        if (!$rentalRequest->isPending()) {
-            return back()->with('error', 'Cette demande ne peut plus être acceptée.');
+        // Charger la relation equipment si elle n'est pas déjà chargée
+        $rentalRequest->load('equipment');
+        
+        // Vérifier que l'équipement existe
+        if (!$rentalRequest->equipment) {
+            return back()->with('error', 'Équipement introuvable.');
         }
         
         // Vérifier la disponibilité
@@ -132,10 +136,6 @@ class EquipmentRentalRequestController extends Controller
     public function reject(Request $request, EquipmentRentalRequest $rentalRequest)
     {
         // $this->authorize('update', $rentalRequest);
-        
-        if (!$rentalRequest->isPending()) {
-            return back()->with('error', 'Cette demande ne peut plus être rejetée.');
-        }
         
         $rentalRequest->reject($request->input('rejection_reason'));
         

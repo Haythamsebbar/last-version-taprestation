@@ -90,12 +90,14 @@ class DashboardController extends Controller
         // Add bookings
         foreach($recentBookings as $booking) {
             $allRequests->push([
+                'id' => $booking->id,
                 'type' => 'service',
                 'title' => $booking->service->title,
                 'prestataire' => $booking->prestataire->user->name,
                 'date' => $booking->start_datetime,
                 'status' => $booking->status,
                 'created_at' => $booking->created_at,
+                'image' => $booking->service->image ?? null,
                 'badge_color' => 'bg-blue-100 text-blue-800',
                 'badge_text' => 'Service'
             ]);
@@ -104,12 +106,14 @@ class DashboardController extends Controller
         // Add equipment rentals
         foreach($recentRentalRequests as $rental) {
             $allRequests->push([
+                'id' => $rental->id,
                 'type' => 'equipment',
                 'title' => $rental->equipment->name,
                 'prestataire' => $rental->equipment->prestataire->user->name,
                 'date' => $rental->created_at,
                 'status' => $rental->status,
                 'created_at' => $rental->created_at,
+                'image' => $rental->equipment->image ?? null,
                 'badge_color' => 'bg-green-100 text-green-800',
                 'badge_text' => 'Matériel'
             ]);
@@ -118,19 +122,37 @@ class DashboardController extends Controller
         // Add urgent sale contacts
         foreach($recentUrgentSaleContacts as $contact) {
             $allRequests->push([
+                'id' => $contact->id,
                 'type' => 'urgent_sale',
                 'title' => $contact->urgentSale->title,
                 'prestataire' => $contact->urgentSale->prestataire->user->name,
                 'date' => $contact->created_at,
                 'status' => $contact->status,
                 'created_at' => $contact->created_at,
+                'image' => $contact->urgentSale->image ?? null,
                 'badge_color' => 'bg-red-100 text-red-800',
                 'badge_text' => 'Vente urgente'
             ]);
         }
         
         // Sort all requests by date (most recent first)
-        $unifiedRequests = $allRequests->sortByDesc('created_at')->take(7);
+        $unifiedRequests = $allRequests->sortByDesc('created_at')->take(5);
+
+        // Recent followed prestataires for subscriptions section
+        $recentFollowedPrestataires = $client->followedPrestataires()
+            ->with(['user', 'services' => function($query) {
+                $query->latest()->take(2);
+            }])
+            ->take(3)
+            ->get();
+
+        // Recent services from followed prestataires
+        $followedPrestatairesIds = $client->followedPrestataires()->pluck('prestataires.id');
+        $recentServicesFromFollowed = Service::whereIn('prestataire_id', $followedPrestatairesIds)
+            ->with(['prestataire.user', 'categories'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
         return view('client.dashboard', [
             'client' => $client,
@@ -141,6 +163,8 @@ class DashboardController extends Controller
             'recentUrgentSaleContacts' => $recentUrgentSaleContacts,
             'unifiedRequests' => $unifiedRequests,
             'unreadMessages' => $unreadMessages,
+            'recentFollowedPrestataires' => $recentFollowedPrestataires,
+            'recentServicesFromFollowed' => $recentServicesFromFollowed,
         ]);
     }
 

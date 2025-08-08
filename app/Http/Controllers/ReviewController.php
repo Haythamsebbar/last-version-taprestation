@@ -70,7 +70,7 @@ class ReviewController extends Controller
         ]);
 
         Review::create([
-            'client_id' => Auth::user()->client->id,
+            'client_id' => Auth::user()->id,
             'prestataire_id' => $request->prestataire_id,
             'rating' => $request->rating,
             'comment' => $request->comment,

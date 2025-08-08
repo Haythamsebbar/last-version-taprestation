@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Prestataire;
 use App\Models\Client;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -84,11 +85,19 @@ class PrestataireFollowController extends Controller
         }
         $client = $user->client;
         
-        // Récupérer les prestataires suivis avec pagination
-        $followedPrestataires = $client->followedPrestataires()
-            ->with(['user', 'skills', 'services'])
-            ->paginate(12);
+        $sort = $request->get('sort', 'recent');
         
-        return view('client.follows.index', compact('followedPrestataires'));
+        $query = $client->followedPrestataires()
+            ->with(['user', 'skills', 'services']);
+        
+        if ($sort === 'oldest') {
+            $query->orderBy('prestataire_follows.created_at', 'asc');
+        } else {
+            $query->orderBy('prestataire_follows.created_at', 'desc');
+        }
+        
+        $prestataires = $query->paginate(12);
+        
+        return view('client.follows.index', compact('prestataires'));
     }
 }

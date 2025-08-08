@@ -267,6 +267,11 @@ class NotificationController extends Controller
             'App\\Notifications\\NewReviewNotification' => 'Nouvel avis',
             'App\\Notifications\\PrestataireApprovedNotification' => 'Prestataire approuvé',
             'App\\Notifications\\RequestHasOffersNotification' => 'Demande avec offres',
+            'App\\Notifications\\NewMessageNotification' => 'Nouveau message',
+            'App\\Notifications\\NewClientRequestNotification' => 'Demande client reçue',
+            'App\\Notifications\\AnnouncementStatusNotification' => 'Statut d\'annonce',
+            'App\\Notifications\\NewBookingNotification' => 'Nouvelle réservation',
+            'App\\Notifications\\BookingConfirmedNotification' => 'Réservation confirmée',
         ];
         
         return $labels[$type] ?? $type;

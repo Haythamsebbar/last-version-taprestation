@@ -35,6 +35,14 @@ class Client extends Model
     }
 
     /**
+     * Alias for followedPrestataires() method.
+     */
+    public function follows()
+    {
+        return $this->followedPrestataires();
+    }
+
+    /**
      * Get the bookings for this client.
      */
     public function bookings()

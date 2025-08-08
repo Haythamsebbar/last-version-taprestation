@@ -36,6 +36,7 @@ class Prestataire extends Model
         'latitude',
         'longitude',
         'is_approved',
+        'is_verified',
         'approved_at',
         'approved_by',
         'rejection_reason',
@@ -184,7 +185,7 @@ class Prestataire extends Model
     /**
      * Relation avec les équipements
      */
-    public function equipment(): HasMany
+    public function equipments(): HasMany
     {
         return $this->hasMany(Equipment::class);
     }

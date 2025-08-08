@@ -21,9 +21,11 @@ class PrestataireController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Prestataire::with(['user', 'skills', 'services.category'])
+        $query = Prestataire::with(['user', 'skills', 'services.category', 'reviews'])
             ->where('is_approved', true)
-            ->where('is_active', true);
+            ->where('is_active', true)
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating');
 
         // Search by name or description
         if ($request->filled('search')) {
@@ -41,6 +43,14 @@ class PrestataireController extends Controller
                 $q->where('category_id', $categoryId);
             });
         }
+        
+        // Filter by subcategory
+        if ($request->filled('subcategory')) {
+            $subcategoryId = $request->get('subcategory');
+            $query->whereHas('services', function ($q) use ($subcategoryId) {
+                $q->where('category_id', $subcategoryId);
+            });
+        }
 
         // Filter by skill
         if ($request->filled('skill')) {
@@ -55,6 +65,30 @@ class PrestataireController extends Controller
             $location = $request->get('location');
             $query->where('city', 'like', "%{$location}%");
         }
+        
+        // Filter by region
+        if ($request->filled('region')) {
+            $region = $request->get('region');
+            // Map regions to cities/departments for filtering
+            $regionCities = $this->getRegionCities($region);
+            if (!empty($regionCities)) {
+                $query->where(function($q) use ($regionCities) {
+                    foreach ($regionCities as $city) {
+                        $q->orWhere('city', 'like', "%{$city}%")
+                          ->orWhere('address', 'like', "%{$city}%");
+                    }
+                });
+            }
+        }
+        
+        // Filter by city
+        if ($request->filled('city')) {
+            $city = $request->get('city');
+            $query->where(function($q) use ($city) {
+                $q->where('city', 'like', "%{$city}%")
+                  ->orWhere('address', 'like', "%{$city}%");
+            });
+        }
 
         // Filter by rating
         if ($request->filled('min_rating')) {
@@ -64,6 +98,26 @@ class PrestataireController extends Controller
                   ->groupBy('prestataire_id')
                   ->havingRaw('AVG(rating) >= ?', [$minRating]);
             });
+        }
+        
+        // Filter by geographic proximity
+        if ($request->filled('user_latitude') && $request->filled('user_longitude') && $request->filled('radius')) {
+            $userLatitude = $request->get('user_latitude');
+            $userLongitude = $request->get('user_longitude');
+            $radius = $request->get('radius');
+            
+            $query->selectRaw(
+                'prestataires.*, ( 6371 * acos( cos( radians(?) ) * 
+                cos( radians( latitude ) ) * 
+                cos( radians( longitude ) - radians(?) ) + 
+                sin( radians(?) ) * 
+                sin( radians( latitude ) ) ) ) AS distance',
+                [$userLatitude, $userLongitude, $userLatitude]
+            )
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->having('distance', '<=', $radius)
+            ->orderBy('distance', 'asc');
         }
 
         // Filtres par fourchette de prix - SUPPRIMÉS pour confidentialité
@@ -135,7 +189,7 @@ class PrestataireController extends Controller
         $sectors = collect();
 
         // Get current filters for form state
-        $filters = $request->only(['sector', 'skill', 'category', 'location', 'min_rating', 'min_price', 'max_price']);
+        $filters = $request->only(['sector', 'skill', 'category', 'subcategory', 'region', 'city', 'location', 'min_rating', 'min_price', 'max_price', 'user_location', 'user_latitude', 'user_longitude', 'radius']);
 
         return view('client.prestataires.index', compact(
             'prestataires',
@@ -166,12 +220,14 @@ class PrestataireController extends Controller
             'services.category',
             'reviews.client.user',
             'availabilities'
-        ]);
+        ])
+        ->loadCount('reviews')
+        ->loadAvg('reviews', 'rating');
 
         // Calculate statistics
         $stats = [
-            'average_rating' => $prestataire->reviews()->avg('rating') ?? 0,
-            'total_reviews' => $prestataire->reviews()->count(),
+            'average_rating' => $prestataire->reviews_avg_rating ?? 0,
+            'total_reviews' => $prestataire->reviews_count ?? 0,
             'total_services' => $prestataire->services()->count(),
             'response_time' => '< 2h', // This could be calculated from actual data
             'completion_rate' => 95, // This could be calculated from bookings
@@ -193,11 +249,38 @@ class PrestataireController extends Controller
                 ->exists();
         }
 
-        return view('client.prestataires.show', compact(
+        return view('prestataires.show', compact(
             'prestataire',
             'stats',
             'recentReviews',
             'isFollowing'
         ));
+    }
+    
+    /**
+     * Get cities for a given region
+     *
+     * @param string $region
+     * @return array
+     */
+    private function getRegionCities($region)
+    {
+        $regionMapping = [
+            'ile-de-france' => ['Paris', 'Versailles', 'Créteil', 'Nanterre', 'Bobigny', 'Pontoise', 'Melun', 'Évry'],
+            'auvergne-rhone-alpes' => ['Lyon', 'Grenoble', 'Saint-Étienne', 'Annecy', 'Chambéry', 'Valence', 'Clermont-Ferrand', 'Bourg-en-Bresse'],
+            'nouvelle-aquitaine' => ['Bordeaux', 'Limoges', 'Poitiers', 'La Rochelle', 'Pau', 'Bayonne', 'Périgueux', 'Tulle', 'Guéret', 'Niort', 'Angoulême', 'Mont-de-Marsan'],
+            'occitanie' => ['Toulouse', 'Montpellier', 'Nîmes', 'Perpignan', 'Béziers', 'Narbonne', 'Carcassonne', 'Albi', 'Castres', 'Tarbes', 'Auch', 'Cahors', 'Rodez', 'Mende', 'Foix'],
+            'hauts-de-france' => ['Lille', 'Amiens', 'Arras', 'Beauvais', 'Laon'],
+            'grand-est' => ['Strasbourg', 'Reims', 'Metz', 'Nancy', 'Mulhouse', 'Troyes', 'Châlons-en-Champagne', 'Charleville-Mézières', 'Bar-le-Duc', 'Épinal', 'Colmar'],
+            'provence-alpes-cote-azur' => ['Marseille', 'Nice', 'Toulon', 'Aix-en-Provence', 'Avignon', 'Cannes', 'Antibes', 'Draguignan', 'Brignoles', 'Grasse', 'Digne-les-Bains', 'Gap'],
+            'pays-de-la-loire' => ['Nantes', 'Angers', 'Le Mans', 'La Roche-sur-Yon', 'Laval'],
+            'bretagne' => ['Rennes', 'Brest', 'Quimper', 'Lorient', 'Saint-Brieuc', 'Vannes'],
+            'normandie' => ['Rouen', 'Caen', 'Le Havre', 'Cherbourg', 'Évreux', 'Alençon', 'Saint-Lô', 'Coutances', 'Avranches'],
+            'bourgogne-franche-comte' => ['Dijon', 'Besançon', 'Belfort', 'Mâcon', 'Chalon-sur-Saône', 'Nevers', 'Auxerre', 'Lons-le-Saunier', 'Vesoul'],
+            'centre-val-de-loire' => ['Orléans', 'Tours', 'Bourges', 'Chartres', 'Blois', 'Châteauroux'],
+            'corse' => ['Ajaccio', 'Bastia', 'Corte', 'Porto-Vecchio', 'Calvi', 'Bonifacio']
+        ];
+        
+        return $regionMapping[$region] ?? [];
     }
 }

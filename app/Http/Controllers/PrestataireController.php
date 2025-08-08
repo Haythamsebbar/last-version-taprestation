@@ -70,13 +70,25 @@ class PrestataireController extends Controller
             abort(404);
         }
         
-        // Load the basic relationships
-        $prestataire->load(['user', 'skills', 'services']);
-        
-        // Load the reviews separately with proper eager loading
-        $prestataire->load(['reviews' => function($query) {
-            $query->with(['client', 'service'])->latest()->take(5);
-        }]);
+        // Load all necessary relationships for the show view
+        $prestataire->load([
+            'user', 
+            'skills', 
+            'services' => function($query) {
+                $query->latest();
+            },
+            'videos' => function($query) {
+                $query->latest();
+            },
+            'reviews' => function($query) {
+                $query->with(['client.user'])->latest();
+            },
+            'equipments' => function($query) {
+                $query->where('status', 'active')
+                      ->where('is_available', true)
+                      ->latest();
+            }
+        ]);
         
         // Récupérer les services similaires d'autres prestataires
         // Obtenir d'abord les IDs des services du prestataire

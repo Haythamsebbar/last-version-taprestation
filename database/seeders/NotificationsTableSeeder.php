@@ -5,8 +5,16 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Notification;
 use App\Models\User;
-
 use App\Models\Offer;
+use App\Models\Service;
+use App\Models\ClientRequest;
+use App\Notifications\NewMessageNotification;
+use App\Notifications\NewClientRequestNotification;
+use App\Notifications\AnnouncementStatusNotification;
+use App\Notifications\OfferAcceptedNotification;
+use App\Notifications\NewOfferNotification;
+use App\Notifications\NewReviewNotification;
+use App\Notifications\PrestataireApprovedNotification;
 use Carbon\Carbon;
 
 class NotificationsTableSeeder extends Seeder
@@ -61,15 +69,20 @@ class NotificationsTableSeeder extends Seeder
                 ]);
             }
             
-            // Notification de message reçu
+            // Notification de message reçu (utilisant la nouvelle classe)
             if (!$prestataires->isEmpty()) {
+                $randomPrestataire = $prestataires->random();
                 Notification::create([
-                    'type' => 'new_message',
+                    'type' => NewMessageNotification::class,
                     'notifiable_type' => 'App\\Models\\User',
                     'notifiable_id' => $client->id,
                     'data' => json_encode([
-                        'title' => 'Nouveau message',
-                        'message' => 'Vous avez reçu un nouveau message. Consultez votre messagerie pour y répondre.',
+                        'title' => 'Nouveau message reçu',
+                        'message' => 'Vous avez reçu un nouveau message de ' . $randomPrestataire->name . '. Consultez votre messagerie pour y répondre.',
+                        'sender_name' => $randomPrestataire->name,
+                        'sender_id' => $randomPrestataire->id,
+                        'url' => '/messages',
+                        'type' => 'new_message'
                     ]),
                     'read_at' => $index % 3 === 0 ? null : Carbon::now()->subHours(rand(1, 24)),
                     'created_at' => Carbon::now()->subDays(rand(1, 3)),
@@ -94,29 +107,44 @@ class NotificationsTableSeeder extends Seeder
                 'updated_at' => Carbon::now()->subDays(rand(1, 5)),
             ]);
             
-            // Notification de nouvelle demande
-            Notification::create([
-                'type' => 'new_request',
-                'notifiable_type' => 'App\\Models\\User',
-                'notifiable_id' => $prestataire->id,
-                'data' => json_encode([
-                    'title' => 'Nouvelle demande de service',
-                    'message' => 'Une nouvelle demande correspondant à vos services est disponible. Consultez-la et faites une offre !',
-                ]),
-                'read_at' => $index % 2 === 0 ? null : Carbon::now()->subDays(rand(1, 3)),
-                'created_at' => Carbon::now()->subDays(rand(1, 7)),
-                'updated_at' => Carbon::now()->subDays(rand(1, 3)),
-            ]);
-            
-            // Notification d'offre acceptée
-            if (!$offers->isEmpty()) {
+            // Notification de nouvelle demande (utilisant la nouvelle classe)
+            if (!$clients->isEmpty()) {
+                $randomClient = $clients->random();
                 Notification::create([
-                    'type' => 'offer_accepted',
+                    'type' => NewClientRequestNotification::class,
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $prestataire->id,
+                    'data' => json_encode([
+                        'title' => 'Nouvelle demande de service',
+                        'message' => 'Une nouvelle demande de ' . $randomClient->name . ' correspondant à vos services est disponible. Budget: ' . (500 + $index * 100) . '€',
+                        'client_name' => $randomClient->name,
+                        'client_id' => $randomClient->id,
+                        'request_title' => 'Développement d\'application web',
+                        'budget' => 500 + $index * 100,
+                        'description' => 'Recherche un développeur expérimenté pour créer une application web moderne.',
+                        'url' => '/prestataire/requests',
+                        'type' => 'new_request'
+                    ]),
+                    'read_at' => $index % 2 === 0 ? null : Carbon::now()->subDays(rand(1, 3)),
+                    'created_at' => Carbon::now()->subDays(rand(1, 7)),
+                    'updated_at' => Carbon::now()->subDays(rand(1, 3)),
+                ]);
+            }
+            
+            // Notification d'offre acceptée (utilisant la nouvelle classe)
+            if (!$offers->isEmpty() && !$clients->isEmpty()) {
+                $randomClient = $clients->random();
+                Notification::create([
+                    'type' => OfferAcceptedNotification::class,
                     'notifiable_type' => 'App\\Models\\User',
                     'notifiable_id' => $prestataire->id,
                     'data' => json_encode([
                         'title' => 'Offre acceptée',
-                        'message' => 'Félicitations ! Votre offre a été acceptée par le client. Contactez-le pour commencer le travail.',
+                        'message' => 'Félicitations ! Votre offre a été acceptée par ' . $randomClient->name . '. Contactez-le pour commencer le travail.',
+                        'client_name' => $randomClient->name,
+                        'offer_price' => 750 + $index * 100,
+                        'url' => '/prestataire/responses',
+                        'type' => 'offer_accepted'
                     ]),
                     'read_at' => $index % 3 === 0 ? null : Carbon::now()->subHours(rand(1, 24)),
                     'created_at' => Carbon::now()->subDays(rand(1, 3)),
@@ -124,32 +152,66 @@ class NotificationsTableSeeder extends Seeder
                 ]);
             }
             
-            // Notification de nouvelle évaluation
+            // Notification de nouvelle évaluation (utilisant la nouvelle classe)
             if (!$clients->isEmpty()) {
+                $randomClient = $clients->random();
+                $rating = rand(4, 5);
                 Notification::create([
-                    'type' => 'new_review',
+                    'type' => NewReviewNotification::class,
                     'notifiable_type' => 'App\\Models\\User',
                     'notifiable_id' => $prestataire->id,
                     'data' => json_encode([
                         'title' => 'Nouvelle évaluation reçue',
-                        'message' => 'Un client a laissé une évaluation sur votre service. Consultez votre profil pour la voir.',
+                        'message' => $randomClient->name . ' a laissé une évaluation ' . $rating . '/5 étoiles sur votre service. Consultez votre profil pour la voir.',
+                        'client_name' => $randomClient->name,
+                        'rating' => $rating,
+                        'url' => '/prestataire/profile',
+                        'type' => 'new_review'
                     ]),
                     'read_at' => $index % 2 === 0 ? null : Carbon::now()->subDays(rand(1, 2)),
                     'created_at' => Carbon::now()->subDays(rand(1, 5)),
                     'updated_at' => Carbon::now()->subDays(rand(1, 2)),
                 ]);
             }
+            
+            // Notification de statut d'annonce (approuvée/rejetée)
+            if ($index < 2) {
+                $status = $index === 0 ? 'approved' : 'rejected';
+                $statusText = $status === 'approved' ? 'approuvée' : 'rejetée';
+                Notification::create([
+                    'type' => AnnouncementStatusNotification::class,
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $prestataire->id,
+                    'data' => json_encode([
+                        'title' => 'Statut de votre annonce',
+                        'message' => 'Votre annonce "Service de développement web" a été ' . $statusText . ' par l\'administration.',
+                        'announcement_title' => 'Service de développement web',
+                        'status' => $status,
+                        'admin_comment' => $status === 'approved' ? 'Votre annonce respecte nos conditions.' : 'Votre annonce ne respecte pas nos conditions de publication.',
+                        'url' => '/prestataire/announcements',
+                        'type' => 'announcement_status'
+                    ]),
+                    'read_at' => null,
+                    'created_at' => Carbon::now()->subHours(rand(2, 12)),
+                    'updated_at' => Carbon::now()->subHours(rand(2, 12)),
+                ]);
+            }
         }
         
         // Notifications pour l'administrateur
         if ($admin && !$prestataires->isEmpty()) {
+            $randomPrestataire = $prestataires->random();
             Notification::create([
-                'type' => 'new_prestataire',
+                'type' => PrestataireApprovedNotification::class,
                 'notifiable_type' => 'App\\Models\\User',
                 'notifiable_id' => $admin->id,
                 'data' => json_encode([
                     'title' => 'Nouveau prestataire à approuver',
-                    'message' => 'Un nouveau prestataire s\'est inscrit et attend votre approbation. Vérifiez ses informations.',
+                    'message' => 'Le prestataire ' . $randomPrestataire->name . ' s\'est inscrit et attend votre approbation. Vérifiez ses informations.',
+                    'prestataire_name' => $randomPrestataire->name,
+                    'prestataire_id' => $randomPrestataire->id,
+                    'url' => '/admin/prestataires',
+                    'type' => 'new_prestataire'
                 ]),
                 'read_at' => null,
                 'created_at' => Carbon::now()->subDays(1),

@@ -320,25 +320,25 @@ class BookingController extends Controller
         
         // Récupérer les réservations de services
         $bookingsQuery = $prestataire->bookings()->with(['client.user', 'service']);
-        if ($request->filled('status') && $request->type !== 'equipment' && $request->type !== 'urgent_sales') {
+        if ($request->filled('status') && (!$request->filled('type') || $request->type === 'bookings')) {
             $bookingsQuery->where('status', $request->status);
         }
         
         // Récupérer les locations d'équipements confirmées
         $equipmentRentalsQuery = $prestataire->equipmentRentals()->with(['client.user', 'equipment']);
-        if ($request->filled('status') && $request->type !== 'bookings' && $request->type !== 'urgent_sales') {
+        if ($request->filled('status') && (!$request->filled('type') || $request->type === 'equipment')) {
             $equipmentRentalsQuery->where('status', $request->status);
         }
         
         // Récupérer les demandes de location d'équipements
         $equipmentRentalRequestsQuery = $prestataire->equipmentRentalRequests()->with(['client.user', 'equipment']);
-        if ($request->filled('status') && $request->type !== 'bookings' && $request->type !== 'urgent_sales') {
+        if ($request->filled('status') && (!$request->filled('type') || $request->type === 'equipment')) {
             $equipmentRentalRequestsQuery->where('status', $request->status);
         }
         
         // Récupérer les ventes urgentes
         $urgentSalesQuery = $prestataire->urgentSales()->with(['contacts.user']);
-        if ($request->filled('status') && $request->type !== 'bookings' && $request->type !== 'equipment') {
+        if ($request->filled('status') && (!$request->filled('type') || $request->type === 'urgent_sales')) {
             $urgentSalesQuery->where('status', $request->status);
         }
         
@@ -375,6 +375,22 @@ class BookingController extends Controller
             $equipmentRentals = $equipmentRentalsQuery->latest()->take(5)->get();
             $equipmentRentalRequests = $equipmentRentalRequestsQuery->latest()->take(5)->get();
             $urgentSales = $urgentSalesQuery->latest()->take(5)->get();
+            
+            // Si on filtre par statut sans type spécifique, vider les collections qui n'ont pas d'éléments correspondants
+            if ($request->filled('status')) {
+                if ($bookings->isEmpty()) {
+                    $bookings = collect();
+                }
+                if ($equipmentRentals->isEmpty()) {
+                    $equipmentRentals = collect();
+                }
+                if ($equipmentRentalRequests->isEmpty()) {
+                    $equipmentRentalRequests = collect();
+                }
+                if ($urgentSales->isEmpty()) {
+                    $urgentSales = collect();
+                }
+            }
         }
 
         return view('prestataire.bookings.index', compact('bookings', 'equipmentRentals', 'equipmentRentalRequests', 'urgentSales'));

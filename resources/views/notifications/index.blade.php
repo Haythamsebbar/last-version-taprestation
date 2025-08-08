@@ -23,7 +23,7 @@
                 </div>
                 
                 @if($notifications->where('read_at', null)->count() > 0)
-                    <form action="{{ route('notifications.markAllAsRead') }}" method="POST" class="inline-block">
+                    <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="inline-block">
                         @csrf
                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             <i class="fas fa-check-double mr-2 text-xs"></i>
@@ -74,6 +74,9 @@
                                                 'App\\Notifications\\NewReviewNotification' => ['icon' => 'fa-star', 'color' => 'text-purple-500', 'bg' => 'bg-purple-100'],
                                                 'App\\Notifications\\PrestataireApprovedNotification' => ['icon' => 'fa-user-check', 'color' => 'text-green-500', 'bg' => 'bg-green-100'],
                                                 'App\\Notifications\\RequestHasOffersNotification' => ['icon' => 'fa-envelope', 'color' => 'text-blue-500', 'bg' => 'bg-blue-100'],
+                                                'App\\Notifications\\NewMessageNotification' => ['icon' => 'fa-comment', 'color' => 'text-purple-500', 'bg' => 'bg-purple-100'],
+                                                'App\\Notifications\\NewClientRequestNotification' => ['icon' => 'fa-clipboard-list', 'color' => 'text-orange-500', 'bg' => 'bg-orange-100'],
+                                                'App\\Notifications\\AnnouncementStatusNotification' => ['icon' => 'fa-bullhorn', 'color' => 'text-indigo-500', 'bg' => 'bg-indigo-100'],
                                             ];
                                             $config = $iconConfig[$notification->type] ?? ['icon' => 'fa-bell', 'color' => 'text-gray-500', 'bg' => 'bg-gray-100'];
                                         @endphp
@@ -92,11 +95,14 @@
                                                 </span>
                                             @endif
                                             <h3 class="text-sm font-semibold text-gray-900 truncate">
-                                                {{ $notification->data['title'] ?? 'Notification' }}
+                                                @php
+                                                    $data = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
+                                                @endphp
+                                                {{ $data['title'] ?? 'Notification' }}
                                             </h3>
                                         </div>
                                         <p class="text-sm text-gray-600 mb-2 leading-relaxed">
-                                            {{ $notification->data['message'] ?? '' }}
+                                            {{ $data['message'] ?? '' }}
                                         </p>
                                         <div class="flex items-center text-xs text-gray-500">
                                             <i class="fas fa-clock mr-1"></i>
@@ -108,7 +114,7 @@
                                 <!-- Actions -->
                                 <div class="flex items-center space-x-2 ml-4">
                                     @if(!$notification->read_at)
-                                        <form action="{{ route('notifications.markAsRead', $notification) }}" method="POST" class="inline-block">
+                                        <form action="{{ route('notifications.mark-as-read', $notification) }}" method="POST" class="inline-block">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                                                 <i class="fas fa-check mr-1"></i>
@@ -162,7 +168,7 @@
                                 Publier une demande
                             </a>
                         @elseif(Auth::user()->hasRole('prestataire'))
-                            <a href="{{ route('prestataire.requests.index') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <a href="{{ route('prestataire.responses.index') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 <i class="fas fa-search mr-2"></i>
                                 Voir les demandes
                             </a>

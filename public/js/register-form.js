@@ -92,28 +92,92 @@ document.addEventListener('DOMContentLoaded', function() {
     const useLocationBtn = document.getElementById('use_location');
     const cityInput = document.getElementById('city') || document.getElementById('location');
     
+    console.log('🌍 Géolocalisation - Éléments trouvés:', {
+        useLocationBtn: useLocationBtn ? 'OUI' : 'NON',
+        cityInput: cityInput ? 'OUI' : 'NON',
+        cityInputId: cityInput ? cityInput.id : 'N/A'
+    });
+    
     if (useLocationBtn && cityInput) {
+        console.log('✅ Configuration de la géolocalisation');
         useLocationBtn.addEventListener('click', function() {
+            console.log('🎯 Clic sur le bouton de géolocalisation');
+            
             if (navigator.geolocation) {
                 useLocationBtn.disabled = true;
                 cityInput.value = 'Recherche de votre position...';
                 
+                // Options pour la géolocalisation
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                };
+                
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
-                        // Ici, vous pourriez utiliser un service de géocodage inverse pour obtenir la ville
-                        // Pour l'exemple, nous allons simplement afficher les coordonnées
-                        cityInput.value = `Position détectée (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`;
-                        useLocationBtn.disabled = false;
+                        console.log('📍 Position obtenue:', position.coords);
+                        
+                        // Utiliser un service de géocodage inverse pour obtenir la ville
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        // Appel à l'API de géocodage inverse (Nominatim - gratuit)
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('🏙️ Données de géocodage:', data);
+                                
+                                let cityName = '';
+                                if (data.address) {
+                                    cityName = data.address.city || 
+                                              data.address.town || 
+                                              data.address.village || 
+                                              data.address.municipality || 
+                                              data.address.county || 
+                                              'Ville non trouvée';
+                                }
+                                
+                                cityInput.value = cityName || `Position détectée (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                                useLocationBtn.disabled = false;
+                            })
+                            .catch(error => {
+                                console.warn('⚠️ Erreur géocodage, utilisation des coordonnées:', error);
+                                cityInput.value = `Position détectée (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                                useLocationBtn.disabled = false;
+                            });
                     },
                     function(error) {
+                        console.error('❌ Erreur de géolocalisation:', error);
                         cityInput.value = '';
-                        alert('Impossible de récupérer votre position. Veuillez entrer votre ville manuellement.');
+                        
+                        let errorMessage = 'Impossible de récupérer votre position.';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Accès à la géolocalisation refusé. Veuillez autoriser l\'accès à votre position.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Position non disponible. Veuillez entrer votre ville manuellement.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Délai d\'attente dépassé. Veuillez réessayer ou entrer votre ville manuellement.';
+                                break;
+                        }
+                        
+                        alert(errorMessage);
                         useLocationBtn.disabled = false;
-                    }
+                    },
+                    options
                 );
             } else {
+                console.error('❌ Géolocalisation non supportée');
                 alert('La géolocalisation n\'est pas prise en charge par votre navigateur.');
             }
+        });
+    } else {
+        console.warn('⚠️ Éléments de géolocalisation non trouvés:', {
+            useLocationBtn: !!useLocationBtn,
+            cityInput: !!cityInput
         });
     }
     

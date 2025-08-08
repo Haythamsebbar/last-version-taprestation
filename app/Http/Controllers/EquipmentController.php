@@ -152,7 +152,7 @@ class EquipmentController extends Controller
                                    ->get();
         
         // Autres équipements du même prestataire
-        $otherEquipment = $equipment->prestataire->equipment()
+        $otherEquipment = $equipment->prestataire->equipments()
                                    ->active()
                                    ->available()
                                    ->where('id', '!=', $equipment->id)

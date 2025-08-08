@@ -19,7 +19,7 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm(Request $request)
     {
-        return view('auth.register-unified');
+        return view('auth.register');
     }
 
     /**
@@ -30,12 +30,15 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
+        // Validation des champs communs d'abord
+        $commonRules = [
             'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\-]+$/u'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
             'user_type' => ['required', 'in:client,prestataire'],
-        ], [
+        ];
+        
+        $commonMessages = [
             'name.required' => 'Le nom est obligatoire.',
             'name.min' => 'Le nom doit contenir au moins 2 caractères.',
             'name.regex' => 'Le nom ne peut contenir que des lettres, espaces et tirets.',
@@ -48,40 +51,26 @@ class RegisterController extends Controller
             'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
             'user_type.required' => 'Vous devez choisir un type de compte.',
             'user_type.in' => 'Le type de compte sélectionné n\'est pas valide.',
-        ]);
-
-        // Create the user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->user_type,
-        ]);
-
-        // Handle user type specific data
+        ];
+        
+        // Validation conditionnelle selon le type d'utilisateur
         if ($request->user_type === 'client') {
-            $request->validate([
+            $clientRules = [
                 'location' => ['nullable', 'string', 'max:255'],
-                'client_profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // Max 2MB
-            ], [
+                'client_profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            ];
+            
+            $clientMessages = [
                 'location.max' => 'La localisation ne peut pas dépasser 255 caractères.',
                 'client_profile_photo.image' => 'Le fichier doit être une image.',
                 'client_profile_photo.mimes' => 'L\'image doit être au format JPEG, PNG, JPG ou GIF.',
                 'client_profile_photo.max' => 'L\'image ne peut pas dépasser 2 MB.',
-            ]);
-
-            $clientPhotoPath = null;
-            if ($request->hasFile('client_profile_photo')) {
-                $clientPhotoPath = $request->file('client_profile_photo')->store('profile_photos/clients', 'public');
-            }
-
-            Client::create([
-                'user_id' => $user->id,
-                'photo' => $clientPhotoPath,
-                'location' => $request->location,
-            ]);
+            ];
+            
+            $request->validate(array_merge($commonRules, $clientRules), array_merge($commonMessages, $clientMessages));
+            
         } elseif ($request->user_type === 'prestataire') {
-            $request->validate([
+            $prestataireRules = [
                 'company_name' => ['required', 'string', 'min:2', 'max:255'],
                 'phone' => ['required', 'string', 'max:20'],
                 'category_id' => ['required', 'exists:categories,id'],
@@ -90,7 +79,9 @@ class RegisterController extends Controller
                 'prestataire_profile_photo' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
                 'description' => ['nullable', 'string', 'max:500'],
                 'portfolio_url' => ['nullable', 'url', 'max:255'],
-            ], [
+            ];
+            
+            $prestataireMessages = [
                 'company_name.required' => 'Le nom de l\'enseigne est obligatoire.',
                 'company_name.min' => 'Le nom de l\'enseigne doit contenir au moins 2 caractères.',
                 'company_name.max' => 'Le nom de l\'enseigne ne peut pas dépasser 255 caractères.',
@@ -108,8 +99,35 @@ class RegisterController extends Controller
                 'description.max' => 'La description ne peut pas dépasser 500 caractères.',
                 'portfolio_url.url' => 'Le lien du portfolio doit être une URL valide.',
                 'portfolio_url.max' => 'Le lien du portfolio ne peut pas dépasser 255 caractères.',
-            ]);
+            ];
+            
+            $request->validate(array_merge($commonRules, $prestataireRules), array_merge($commonMessages, $prestataireMessages));
+        } else {
+            // Validation des champs communs seulement si le type n'est pas reconnu
+            $request->validate($commonRules, $commonMessages);
+        }
 
+        // Create the user
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->user_type,
+        ]);
+
+        // Handle user type specific data (validation already done above)
+        if ($request->user_type === 'client') {
+            $clientPhotoPath = null;
+            if ($request->hasFile('client_profile_photo')) {
+                $clientPhotoPath = $request->file('client_profile_photo')->store('profile_photos/clients', 'public');
+            }
+
+            Client::create([
+                'user_id' => $user->id,
+                'photo' => $clientPhotoPath,
+                'location' => $request->location,
+            ]);
+        } elseif ($request->user_type === 'prestataire') {
             $prestatairePhotoPath = null;
             if ($request->hasFile('prestataire_profile_photo')) {
                 $prestatairePhotoPath = $request->file('prestataire_profile_photo')->store('profile_photos/prestataires', 'public');

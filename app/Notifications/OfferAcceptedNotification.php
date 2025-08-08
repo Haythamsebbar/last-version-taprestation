@@ -73,10 +73,11 @@ class OfferAcceptedNotification extends Notification implements ShouldQueue
     public function toArray($notifiable)
     {
         return [
+            'title' => 'Offre acceptée',
+            'message' => 'Votre offre pour la demande "' . $this->clientRequest->title . '" a été acceptée par le client.',
             'offer_id' => $this->offer->id,
             'client_request_id' => $this->clientRequest->id,
             'booking_id' => $this->booking->id,
-            'message' => 'Votre offre pour la demande "' . $this->clientRequest->title . '" a été acceptée',
             'type' => 'offer_accepted',
             'url' => route('prestataire.responses.show', $this->offer->id)
         ];

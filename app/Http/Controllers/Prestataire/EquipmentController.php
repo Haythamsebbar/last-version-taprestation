@@ -27,7 +27,7 @@ class EquipmentController extends Controller
         $prestataire = Auth::user()->prestataire;
         
         
-        $query = $prestataire->equipment()
+        $query = $prestataire->equipments()
                             ->with(['categories', 'rentalRequests', 'rentals'])
                             ->withCount(['rentalRequests', 'rentals', 'reviews']);
         
@@ -81,9 +81,9 @@ class EquipmentController extends Controller
 
         // Statistiques
         $stats = [
-            'total' => $prestataire->equipment()->count(),
-            'active' => $prestataire->equipment()->active()->count(),
-            'rented' => $prestataire->equipment()->where('status', 'rented')->count(),
+            'total' => $prestataire->equipments()->count(),
+            'active' => $prestataire->equipments()->active()->count(),
+            'rented' => $prestataire->equipments()->where('status', 'rented')->count(),
             'pending_requests' => $prestataire->equipmentRentalRequests()->pending()->count(),
         ];
 

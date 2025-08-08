@@ -55,7 +55,7 @@ class EquipmentRentalController extends Controller
         ];
         
         // Liste des équipements pour le filtre
-        $equipments = $prestataire->equipment()->active()->get(['id', 'name']);
+        $equipments = $prestataire->equipments()->active()->get(['id', 'name']);
         
         return view('prestataire.equipment.rentals.index', compact('rentals', 'stats', 'equipments'));
     }

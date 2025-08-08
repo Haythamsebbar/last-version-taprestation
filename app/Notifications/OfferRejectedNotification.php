@@ -68,9 +68,10 @@ class OfferRejectedNotification extends Notification implements ShouldQueue
     public function toArray($notifiable)
     {
         return [
+            'title' => 'Offre refusée',
+            'message' => 'Votre offre pour la demande "' . $this->clientRequest->title . '" a été refusée par le client.',
             'offer_id' => $this->offer->id,
             'client_request_id' => $this->clientRequest->id,
-            'message' => 'Votre offre pour la demande "' . $this->clientRequest->title . '" a été refusée',
             'type' => 'offer_rejected',
             'url' => route('prestataire.responses.show', $this->offer->id)
         ];

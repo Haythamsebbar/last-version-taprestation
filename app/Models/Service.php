@@ -92,6 +92,16 @@ class Service extends Model
     }
 
     /**
+     * Get the name attribute (alias for title).
+     *
+     * @return string
+     */
+    public function getNameAttribute()
+    {
+        return $this->title;
+    }
+
+    /**
      * Get the badge color for the delivery time.
      *
      * @return string

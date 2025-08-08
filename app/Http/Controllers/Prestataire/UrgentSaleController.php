@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Prestataire;
 
 use App\Http\Controllers\Controller;
+use App\Models\EquipmentCategory;
 use App\Models\UrgentSale;
 use App\Models\UrgentSaleContact;
 use Illuminate\Http\Request;
@@ -55,7 +56,8 @@ class UrgentSaleController extends Controller
      */
     public function create()
     {
-        return view('prestataire.urgent-sales.create');
+        $categories = EquipmentCategory::with('children')->get();
+        return view('prestataire.urgent-sales.create', compact('categories'));
     }
 
     /**
@@ -68,6 +70,7 @@ class UrgentSaleController extends Controller
             'description' => 'required|string|max:2000',
             'price' => 'required|numeric|min:0',
             'condition' => 'required|in:new,good,used,fair',
+            'category_id' => 'required|exists:equipment_categories,id',
             'photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'quantity' => 'nullable|integer|min:1',
             'location' => 'nullable|string|max:255',
@@ -88,6 +91,7 @@ class UrgentSaleController extends Controller
         $urgentSale->description = $request->description;
         $urgentSale->price = $request->price;
         $urgentSale->condition = $request->condition;
+        $urgentSale->category_id = $request->category_id;
         $urgentSale->quantity = $request->quantity ?? 1;
         $urgentSale->location = $request->location;
         $urgentSale->latitude = $request->latitude;
@@ -277,5 +281,37 @@ class UrgentSaleController extends Controller
         $contact->markAsResponded($request->response);
         
         return back()->with('success', 'Réponse envoyée avec succès!');
+    }
+    
+    /**
+     * Accepter un contact de vente urgente
+     */
+    public function acceptContact(UrgentSaleContact $contact)
+    {
+        // Vérifier que le prestataire est propriétaire de cette vente
+        if ($contact->urgentSale->prestataire_id !== Auth::user()->prestataire->id) {
+            abort(403, 'Non autorisé');
+        }
+        
+        $contact->update(['status' => 'accepted']);
+        
+        return redirect()->route('prestataire.bookings.index')
+            ->with('success', 'Contact accepté avec succès.');
+    }
+    
+    /**
+     * Refuser un contact de vente urgente
+     */
+    public function rejectContact(UrgentSaleContact $contact)
+    {
+        // Vérifier que le prestataire est propriétaire de cette vente
+        if ($contact->urgentSale->prestataire_id !== Auth::user()->prestataire->id) {
+            abort(403, 'Non autorisé');
+        }
+        
+        $contact->update(['status' => 'rejected']);
+        
+        return redirect()->route('prestataire.bookings.index')
+            ->with('success', 'Contact refusé.');
     }
 }

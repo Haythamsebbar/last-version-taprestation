@@ -64,6 +64,28 @@
                             @enderror
                         </div>
                         
+                        <!-- Catégorie -->
+                        <div>
+                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Catégorie *</label>
+                            <select id="category_id" name="category_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 @error('category_id') border-red-500 @enderror">
+                                <option value="">Choisissez une catégorie</option>
+                                @foreach ($categories as $category)
+                                    <optgroup label="{{ $category->name }}">
+                                        @if($category->children->count() > 0)
+                                            @foreach ($category->children as $child)
+                                                <option value="{{ $child->id }}" {{ old('category_id') == $child->id ? 'selected' : '' }}>{{ $child->name }}</option>
+                                            @endforeach
+                                        @else
+                                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                        @endif
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('category_id')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        
                         <!-- Quantité -->
                         <div>
                             <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantité *</label>

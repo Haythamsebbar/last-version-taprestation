@@ -30,7 +30,7 @@ class DashboardController extends Controller
         $bookingsCount = Booking::where('prestataire_id', $prestataire->id)->count();
         
         // Statistiques pour les équipements
-        $equipmentCount = $prestataire->equipment()->count();
+        $equipmentCount = $prestataire->equipments()->count();
         $equipmentRentalRequestsCount = $prestataire->equipmentRentalRequests()->where('status', 'pending')->count();
         $activeRentalsCount = $prestataire->equipmentRentals()->where('status', 'active')->count();
         $monthlyEquipmentRevenue = $prestataire->equipmentRentals()
