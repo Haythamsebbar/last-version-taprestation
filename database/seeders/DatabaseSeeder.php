@@ -18,7 +18,6 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call([
             UsersTableSeeder::class,
-            VideoSeeder::class,
             CategoriesTableSeeder::class,
             EquipmentCategoriesTableSeeder::class,
             EquipmentTableSeeder::class,
@@ -29,7 +28,6 @@ class DatabaseSeeder extends Seeder
 
             UrgentSalesTableSeeder::class,
             OffersTableSeeder::class,
-            ReviewsTableSeeder::class,
             NotificationsTableSeeder::class,
             MessagesTableSeeder::class,
             BookingsTableSeeder::class,

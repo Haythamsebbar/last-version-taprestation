@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('prestataires', function (Blueprint $table) {
-            $table->boolean('is_verified')->default(false);
+            if (!Schema::hasColumn('prestataires', 'is_verified')) {
+                $table->boolean('is_verified')->default(false);
+            }
         });
     }
 

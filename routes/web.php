@@ -142,6 +142,80 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
+// CSRF Token refresh route
+Route::get('/csrf-token', function () {
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId(),
+        'session_started' => session()->isStarted(),
+        'session_token' => session()->token()
+    ]);
+});
+
+// Debug route for CSRF testing
+Route::get('/debug-csrf', function () {
+    session()->start();
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_token' => session()->token(),
+        'session_id' => session()->getId(),
+        'session_started' => session()->isStarted(),
+        'app_key_set' => !empty(config('app.key'))
+    ]);
+});
+
+// Test POST route to check CSRF
+Route::post('/test-csrf', function (Illuminate\Http\Request $request) {
+    return response()->json([
+        'success' => true,
+        'message' => 'CSRF token is working!',
+        'token_received' => $request->input('_token'),
+        'session_token' => session()->token()
+    ]);
+});
+
+// Simple test form to verify CSRF
+Route::get('/test-form', function () {
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CSRF Test</title>
+        <meta name="csrf-token" content="' . csrf_token() . '">
+    </head>
+    <body>
+        <h1>CSRF Test Form</h1>
+        <form method="POST" action="/test-csrf">
+            ' . csrf_field() . '
+            <input type="text" name="test_field" value="test_value" required>
+            <button type="submit">Test Submit</button>
+        </form>
+        
+        <script>
+        document.querySelector("form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch("/test-csrf", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").getAttribute("content")
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert("Success: " + JSON.stringify(data));
+            })
+            .catch(error => {
+                alert("Error: " + error);
+            });
+        });
+        </script>
+    </body>
+    </html>';
+});
+
 // Password Reset Routes
 Route::get('/password/reset', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
 

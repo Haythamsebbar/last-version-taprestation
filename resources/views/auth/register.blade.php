@@ -253,7 +253,7 @@
         
         <!-- Formulaire Client -->
         <div id="client-form" class="form-section">
-            <form class="mt-8 space-y-6" action="{{ route('register') }}" method="POST" enctype="multipart/form-data">
+            <form id="client-form-element" class="mt-8 space-y-6" action="{{ route('register') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="user_type" value="client">
                 
@@ -338,7 +338,7 @@
         
         <!-- Formulaire Prestataire -->
         <div id="prestataire-form" class="form-section">
-            <form class="mt-8 space-y-6" action="{{ route('register') }}" method="POST" enctype="multipart/form-data">
+            <form id="prestataire-form-element" class="mt-8 space-y-6" action="{{ route('register') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="user_type" value="prestataire">
                 
@@ -475,76 +475,49 @@ document.addEventListener('DOMContentLoaded', function() {
     const prestataireForm = document.getElementById('prestataire-form');
     const reassuranceText = document.getElementById('reassurance-text');
     
-    // Fonction pour désactiver les champs d'un formulaire
+    // Function to disable form fields (so they won't be validated or submitted)
     function disableFormFields(form) {
         if (form) {
             const inputs = form.querySelectorAll('input, select, textarea');
             inputs.forEach(input => {
-                if (input.name !== 'user_type' && input.type !== 'hidden') {
+                // Disable ALL inputs including hidden ones (except CSRF token)
+                if (input.name !== '_token') {
                     input.disabled = true;
                     input.removeAttribute('required');
-                    input.removeAttribute('name'); // Empêcher l'envoi des champs désactivés
                 }
             });
         }
     }
     
-    // Fonction pour activer les champs d'un formulaire
+    // Function to enable form fields
     function enableFormFields(form) {
         if (form) {
             const inputs = form.querySelectorAll('input, select, textarea');
             inputs.forEach(input => {
-                const originalName = input.getAttribute('data-original-name') || input.id.replace(/^(client_|prestataire_)/, '');
-                
-                if (originalName !== 'user_type') {
+                // Enable ALL inputs in the active form (except CSRF token)
+                if (input.name !== '_token') {
                     input.disabled = false;
                     
-                    // Restaurer l'attribut name selon le formulaire
-                    if (form.id === 'client-form') {
-                        // Mapping des noms pour le formulaire client
-                        const clientFieldMapping = {
-                            'client_name': 'name',
-                            'client_email': 'email',
-                            'client_password': 'password',
-                            'client_password_confirmation': 'password_confirmation',
-                            'location': 'location',
-                            'client_profile_photo': 'client_profile_photo',
-                            'selectedAddress': 'location',
-                            'selectedLatitude': 'latitude',
-                            'selectedLongitude': 'longitude'
-                        };
-                        
-                        const fieldName = clientFieldMapping[input.id] || input.id;
-                        input.setAttribute('name', fieldName);
-                        
-                        // Restaurer les attributs required pour les champs obligatoires
-                        if (['name', 'email', 'password', 'password_confirmation'].includes(fieldName)) {
+                    // Add required attribute back to required fields based on form type
+                    if (form.id === 'client-form-element') {
+                        // Client required fields - only basic fields are required for clients
+                        if (['client_name', 'client_email', 'client_password', 'client_password_confirmation'].includes(input.id)) {
                             input.setAttribute('required', 'required');
                         }
-                    } else if (form.id === 'prestataire-form') {
-                        // Mapping des noms pour le formulaire prestataire
-                        const prestataireFieldMapping = {
-                            'prestataire_name': 'name',
-                            'prestataire_email': 'email',
-                            'prestataire_password': 'password',
-                            'prestataire_password_confirmation': 'password_confirmation',
-                            'company_name': 'company_name',
-                            'phone': 'phone',
-                            'category_id': 'category_id',
-                            'subcategory_id': 'subcategory_id',
-                            'prestataire_profile_photo': 'prestataire_profile_photo',
-                            'description': 'description',
-                            'portfolio_url': 'portfolio_url',
-                            'prestataireSelectedAddress': 'city',
-                            'prestataireSelectedLatitude': 'latitude',
-                            'prestataireSelectedLongitude': 'longitude'
-                        };
+                    } else if (form.id === 'prestataire-form-element') {
+                        // Prestataire required fields - based on the actual form structure
+                        const requiredFields = [
+                            'prestataire_name', 'prestataire_email', 'prestataire_password', 
+                            'prestataire_password_confirmation', 'company_name', 'phone', 
+                            'category_id', 'prestataire_profile_photo'
+                        ];
                         
-                        const fieldName = prestataireFieldMapping[input.id] || input.id;
-                        input.setAttribute('name', fieldName);
+                        if (requiredFields.includes(input.id)) {
+                            input.setAttribute('required', 'required');
+                        }
                         
-                        // Restaurer les attributs required pour les champs obligatoires
-                        if (['name', 'email', 'password', 'password_confirmation', 'company_name', 'phone', 'category_id', 'city', 'prestataire_profile_photo'].includes(fieldName)) {
+                        // Special case for city field which has a different ID
+                        if (input.id === 'prestataireSelectedAddress') {
                             input.setAttribute('required', 'required');
                         }
                     }
@@ -572,7 +545,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher le formulaire approprié et activer ses champs
             if (userType === 'client') {
                 clientForm.classList.add('active');
+                clientForm.style.display = 'block';
                 enableFormFields(clientForm);
+                // Ensure the client form has the correct user_type value AFTER enabling fields
+                setTimeout(() => {
+                    const clientUserTypeInput = clientForm.querySelector('input[name="user_type"]');
+                    if (clientUserTypeInput) {
+                        clientUserTypeInput.disabled = false;
+                        clientUserTypeInput.value = 'client';
+                        console.log('Set client user_type to:', clientUserTypeInput.value);
+                    }
+                }, 10);
+                // Completely remove the prestataire form from DOM to prevent any submission
+                prestataireForm.style.display = 'none';
+                prestataireForm.remove();
                 reassuranceText.textContent = '100% gratuit – Trouvez des professionnels qualifiés en quelques clics.';
                 // Initialiser la carte après un délai pour s'assurer que l'élément est visible
                 setTimeout(() => {
@@ -582,7 +568,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 100);
             } else if (userType === 'prestataire') {
                 prestataireForm.classList.add('active');
+                prestataireForm.style.display = 'block';
                 enableFormFields(prestataireForm);
+                // Ensure the prestataire form has the correct user_type value AFTER enabling fields
+                setTimeout(() => {
+                    const prestataireUserTypeInput = prestataireForm.querySelector('input[name="user_type"]');
+                    if (prestataireUserTypeInput) {
+                        prestataireUserTypeInput.disabled = false;
+                        prestataireUserTypeInput.value = 'prestataire';
+                        console.log('Set prestataire user_type to:', prestataireUserTypeInput.value);
+                    }
+                }, 10);
+                // Completely remove the client form from DOM to prevent any submission
+                clientForm.style.display = 'none';
+                clientForm.remove();
                 reassuranceText.textContent = '100% gratuit – Proposez vos services professionnels en quelques clics.';
                 // Initialiser la carte après un délai pour s'assurer que l'élément est visible
                 setTimeout(() => {
@@ -603,11 +602,74 @@ document.addEventListener('DOMContentLoaded', function() {
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
             const selectedOption = document.querySelector('.user-type-option.selected');
+            const submitButton = form.querySelector('button[type="submit"]');
+            
             if (!selectedOption) {
                 e.preventDefault();
                 alert('Veuillez sélectionner un type de compte (Client ou Prestataire) avant de continuer.');
                 return false;
             }
+            
+            // Only allow the active form to be submitted
+            const selectedType = selectedOption.dataset.type;
+            const currentFormType = form.id === 'client-form-element' ? 'client' : 'prestataire';
+            
+            console.log('Form submission attempt:', {
+                selectedType: selectedType,
+                currentFormType: currentFormType,
+                formId: form.id,
+                shouldSubmit: selectedType === currentFormType
+            });
+            
+            if (selectedType !== currentFormType) {
+                console.log('Preventing form submission - wrong form type');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Allowing form submission');
+            
+            // Debug: Log all form data before submission
+            const formData = new FormData(form);
+            console.log('Form data being submitted:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ':', value);
+            }
+            
+            // Show loading state for the correct form
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Inscription en cours...';
+                
+                // Fallback to re-enable button after 10 seconds
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    if (form.id === 'client-form-element') {
+                        submitButton.innerHTML = 'S\'inscrire en tant que Client';
+                    } else {
+                        submitButton.innerHTML = 'S\'inscrire en tant que Prestataire';
+                    }
+                }, 10000);
+            }
+            
+            // Show loading state for the correct form
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Inscription en cours...';
+                
+                // Fallback to re-enable button after 10 seconds
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    if (form.id === 'client-form-element') {
+                        submitButton.innerHTML = 'S\'inscrire en tant que Client';
+                    } else {
+                        submitButton.innerHTML = 'S\'inscrire en tant que Prestataire';
+                    }
+                }, 10000);
+            }
+            
+            // Allow form to submit normally
+            return true;
         });
     });
     
@@ -900,6 +962,44 @@ function loadSubcategories(categoryId) {
             subcategoryGroup.style.display = 'none';
         });
 }
+
+// CSRF Token Refresh Function
+function refreshCSRFToken() {
+    fetch('/csrf-token')
+        .then(response => response.json())
+        .then(data => {
+            // Update all CSRF tokens in forms
+            document.querySelectorAll('input[name="_token"]').forEach(input => {
+                input.value = data.csrf_token;
+            });
+            // Update meta tag if exists
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                metaTag.setAttribute('content', data.csrf_token);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing CSRF token:', error);
+        });
+}
+
+// Refresh CSRF token every 30 minutes
+setInterval(refreshCSRFToken, 30 * 60 * 1000);
+
+// Refresh CSRF token when page becomes visible (user returns to tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        refreshCSRFToken();
+    }
+});
+
+// Store original button text and reset loading state on page load
+document.querySelectorAll('button[type="submit"]').forEach(button => {
+    button.setAttribute('data-original-text', button.innerHTML);
+    // Reset button state on page load (in case of validation errors)
+    button.disabled = false;
+    button.innerHTML = button.getAttribute('data-original-text');
+});
 
 </script>
 

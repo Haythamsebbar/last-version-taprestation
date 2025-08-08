@@ -30,6 +30,17 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
+        // Debug CSRF token and all form data
+        \Log::info('Register request received', [
+            'csrf_token_from_request' => $request->input('_token'),
+            'session_token' => session()->token(),
+            'session_id' => session()->getId(),
+            'user_type' => $request->input('user_type'),
+            'all_input' => $request->all(),
+            'method' => $request->method(),
+            'url' => $request->url()
+        ]);
+        
         // Validation des champs communs d'abord
         $commonRules = [
             'name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\pL\s\-]+$/u'],

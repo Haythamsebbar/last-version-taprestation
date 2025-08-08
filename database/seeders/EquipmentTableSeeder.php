@@ -123,30 +123,34 @@ class EquipmentTableSeeder extends Seeder
             Storage::disk('public')->put($photoPath, $photoContent);
 
             // Créer l'équipement
-            $equipment = Equipment::create([
-                'name' => $data['name'],
-                'slug' => Str::slug($data['name']),
-                'description' => $data['description'],
-                'price_per_day' => $data['daily_rate'],
-                'price_per_week' => $data['weekly_rate'],
-                'condition' => $data['condition'],
-                'status' => $data['availability_status'] === 'available' ? 'active' : 'inactive',
-                'main_photo' => $photoPath,
-                'photos' => [$photoPath], // Ajouter aussi dans le tableau photos
-                'prestataire_id' => $prestataires->random()->id,
-                'city' => 'Paris',
-                'postal_code' => '75001',
-                'country' => 'France',
-                'delivery_radius' => 50,
-                'delivery_fee' => 10.00,
-                'security_deposit' => $data['daily_rate'] * 5, // Caution = 5 jours de location
-                'minimum_rental_duration' => 1,
-                'maximum_rental_duration' => 30,
-                'is_available' => true
-            ]);
+            $equipment = Equipment::firstOrCreate(
+                ['slug' => Str::slug($data['name'])],
+                [
+                    'name' => $data['name'],
+                    'description' => $data['description'],
+                    'price_per_day' => $data['daily_rate'],
+                    'price_per_week' => $data['weekly_rate'],
+                    'condition' => $data['condition'],
+                    'status' => $data['availability_status'] === 'available' ? 'active' : 'inactive',
+                    'main_photo' => $photoPath,
+                    'photos' => [$photoPath], // Ajouter aussi dans le tableau photos
+                    'prestataire_id' => $prestataires->random()->id,
+                    'city' => 'Paris',
+                    'postal_code' => '75001',
+                    'country' => 'France',
+                    'delivery_radius' => 50,
+                    'delivery_fee' => 10.00,
+                    'security_deposit' => $data['daily_rate'] * 5, // Caution = 5 jours de location
+                    'minimum_rental_duration' => 1,
+                    'maximum_rental_duration' => 30,
+                    'is_available' => true
+                ]
+            );
 
-            // Attacher la catégorie
-            $equipment->categories()->attach($category->id);
+            // Attacher la catégorie si elle n'est pas déjà attachée
+            if (!$equipment->categories()->where('equipment_category_id', $category->id)->exists()) {
+                $equipment->categories()->attach($category->id);
+            }
         }
 
         $this->command->info('Équipements créés avec succès avec photos d\'exemple!');
